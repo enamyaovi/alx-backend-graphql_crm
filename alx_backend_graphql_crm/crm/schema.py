@@ -9,6 +9,11 @@ def phone_number_validator(number):
     pattern = r"^\+[0-9\-\(\)\/\.\s]{6,15}[0-9]$"
     return re.match(pattern, number) is not None
 
+class CustomerInput(graphene.InputObjectType):
+    name = graphene.String(required=True)
+    email = graphene.String(required=True)
+    phone = graphene.String(required=True)
+    
 class CustomerType(DjangoObjectType):
     class Meta:
         model = Customer
@@ -27,19 +32,23 @@ class ProductType(DjangoObjectType):
 class Query(graphene.ObjectType):
     all_orders = graphene.List(OrderType)
     all_products = graphene.List(ProductType)
+    all_customers = graphene.List(CustomerType)
     customers_by_name = graphene.Field(
         CustomerType, name=graphene.String(required=True))
     
-    def resolve_all_orders(self, info):
-        return Order.objects.select_related('customer_id').all()
+    def resolve_all_orders(parent, info): # type: ignore
+        return Order.objects.select_related('customer_id').select_related('product_id').all()
     
-    def resolve_customers_by_name(self, info, name):
+    def resolve_all_customers(parent, info): # type: ignore
+        return Customer.objects.prefetch_related('orders').all()
+    
+    def resolve_customers_by_name(parent, info, name): # type: ignore
         try:
             return Customer.objects.prefetch_related('orders').get(name=name)
         except Customer.DoesNotExist:
             return None
         
-    def resolve_all_products(self, info):
+    def resolve_all_products(parent, info): # type: ignore
         return Product.objects.prefetch_related('product_orders').all()
 
 class CreateCustomer(graphene.Mutation):
@@ -49,9 +58,10 @@ class CreateCustomer(graphene.Mutation):
         phone = graphene.String(required=True)
     
     customer = graphene.Field(CustomerType)
-
+    message = graphene.Field(graphene.String)
     
-    def mutate(self, info, name, email, phone):
+    @classmethod
+    def mutate(cls, root, info, name, email, phone):
 
         if Customer.objects.filter(email=email).exists():
             raise GraphQLError("Sorry Customer with email exists")
@@ -64,11 +74,74 @@ class CreateCustomer(graphene.Mutation):
 
         customer = Customer(name=name, email=email, phone=phone)
         customer.save()
-        return CreateCustomer(customer=customer)  # type: ignore
+        message = f"Customer {customer.name} created!"
+        return CreateCustomer(
+            customer=customer, message=message)  # type: ignore
     
 
-# class BulkCreateCustomers(graphene.Mutation):
-    # pass 
+class BulkCreateCustomers(graphene.Mutation):
+    class Arguments:
+        customers = graphene.List(CustomerInput, required=True)
+    
+    created_customers = graphene.List(CustomerType)
+    errors = graphene.List(graphene.String)
+    message= graphene.Field(graphene.String)
+    ok = graphene.Boolean()
+
+    @classmethod
+    def mutate(cls, root, info, customers):
+        errors = []
+        valid_objs = []
+
+        incoming_emails = [c.email.lower() for c in customers]
+        incoming_phone_nums = [c.phone for c in customers]
+
+        existing_emails = set(
+            Customer.objects.filter(email__in=incoming_emails).values_list(
+                'email', flat=True))
+        existing_phone_nums = set(
+            Customer.objects.filter(phone__in=incoming_phone_nums).values_list(
+                'phone', flat=True))
+        
+        for index, customer in enumerate(customers):
+            if customer.email in existing_emails:
+                errors.append(f"[{index}]: Customer with {customer.email} already exists")
+                continue
+
+            if customer.phone in existing_phone_nums:
+                errors.append(f"[{index}]: Customer with {customer.phone} already exists")
+                continue
+                
+            if phone_number_validator(number=customer.phone) is None:
+                errors.append(f"[{index}]: {customer.phone} is not valid")
+                continue
+
+
+
+            valid_objs.append(Customer(
+                name=customer.name,
+                email=customer.email,
+                phone=customer.phone))
+            
+            #didn't use this method because it results in more database hits than needed
+        # for customer in customers:
+            # if Customer.objects.filter(email=customer.email).exists():
+            # if Customer.objects.filter(phone=customer.phone).exists():
+
+        if valid_objs:
+            Customer.objects.bulk_create(valid_objs)
+
+        #output message
+        if valid_objs and errors:
+            message = f"Created {len(valid_objs)} customers, {len(errors)} failed."
+        elif valid_objs:
+            message = f"Successfully created {len(valid_objs)} customers."
+        else:
+            message = "No customers created."
+
+        return BulkCreateCustomers(
+            created_customers=valid_objs, errors=errors, ok=bool(valid_objs),message=message) # type: ignore
+
 
 class CreateProduct(graphene.Mutation):
     class Arguments:
@@ -78,7 +151,7 @@ class CreateProduct(graphene.Mutation):
 
     product = graphene.Field(ProductType)
 
-    def mutate(self, info, name, price, stock):
+    def mutate(parent, info, name, price, stock): # type: ignore
 
         if not price >= 0:
             raise ValueError("The Product Price should be positive")
@@ -93,12 +166,12 @@ class CreateProduct(graphene.Mutation):
 class CreateOrder(graphene.Mutation):
     class Arguments:
         customer_id=graphene.ID(required=True)
-        product_id=graphene.ID(required=True)
+        product_ids=graphene.ID(required=True)
         order_date=graphene.DateTime(default=datetime.datetime.now())
         
     order = graphene.Field(OrderType)
 
-    def mutate(self, info, customer_id, product_id, order_date):
+    def mutate(parent, info, customer_id, product_id, order_date): # type: ignore
         if not Customer.objects.filter(id=customer_id).exists():
                 raise Customer.DoesNotExist(f"Customer: {customer_id} Does Not Exist")
         if not Product.objects.filter(id=product_id).exists():
