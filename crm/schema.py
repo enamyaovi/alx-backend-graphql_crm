@@ -70,7 +70,6 @@ class CreateCustomer(graphene.Mutation):
             customer.save() 
             return CreateCustomer(customer=customer, message="Customer created successfully")
         except ValidationError as e: 
-            raise GraphQLError(str(e)) from None
 
 class BulkCreateCustomers(graphene.Mutation):
     class Arguments:
