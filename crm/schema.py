@@ -38,22 +38,17 @@ class OrderType(DjangoObjectType):
 # ------------------------------
 # Input Types
 # ------------------------------
-class CreateCustomerInput(graphene.InputObjectType):
+class CustomerInput(graphene.InputObjectType):
     name = graphene.String(required=True)
     email = graphene.String(required=True)
     phone = graphene.String()
 
-class BulkCustomerInput(graphene.InputObjectType):
-    name = graphene.String(required=True)
-    email = graphene.String(required=True)
-    phone = graphene.String()
-
-class CreateProductInput(graphene.InputObjectType):
+class ProductInput(graphene.InputObjectType):
     name = graphene.String(required=True)
     price = graphene.Float(required=True)
     stock = graphene.Int()
 
-class CreateOrderInput(graphene.InputObjectType):
+class OrderInput(graphene.InputObjectType):
     customer_id = graphene.ID(required=True)
     product_ids = graphene.List(graphene.ID, required=True)
     order_date = graphene.DateTime()
@@ -63,7 +58,7 @@ class CreateOrderInput(graphene.InputObjectType):
 # ------------------------------
 class CreateCustomer(graphene.Mutation):
     class Arguments:
-        input = CreateCustomerInput(required=True)
+        input = CustomerInput(required=True)
 
     customer = graphene.Field(CustomerType)
     message = graphene.String()
