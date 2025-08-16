@@ -55,31 +55,27 @@ class OrderInput(graphene.InputObjectType):
 
 # ------------------------------
 # Mutations
-# ------------------------------
-class CreateCustomer(graphene.Mutation):
-    class Arguments:
-        input = CustomerInput(required=True)
-
-    customer = graphene.Field(CustomerType)
-    message = graphene.String()
-
-    @staticmethod
-    def mutate(root, info, input):
-        if Customer.objects.filter(email=input.email).exists():
-            raise GraphQLError("Email already exists")
-        if input.phone and not re.match(r'^(\+\d{10,15}|\d{3}-\d{3}-\d{4})$', input.phone):
-            return CreateCustomer(customer=None, message="Invalid phone number format")
-        customer = Customer.objects.create(
-            name=input.name,
-            email=input.email,
-            phone=input.phone
-        )
-        return CreateCustomer(customer=customer, message="Customer created successfully")
-
+class CreateCustomer(graphene.Mutation): 
+    class Arguments: 
+        input = CustomerInput(required=True) 
+    customer = graphene.Field(CustomerType) 
+    message = graphene.String() 
+    
+    @staticmethod 
+    def mutate(root, info, input): 
+        if Customer.objects.filter(email=input.email).exists(): 
+            raise GraphQLError("Email already exists") 
+        try: 
+            customer = Customer(name=input.name, email=input.email, phone=input.phone)
+            customer.full_clean() 
+            customer.save() 
+            return CreateCustomer(customer=customer, message="Customer created successfully")
+        except ValidationError as e: 
+            raise GraphQLError(str(e)) from None
 
 class BulkCreateCustomers(graphene.Mutation):
     class Arguments:
-        input = graphene.List(graphene.NonNull(BulkCustomerInput), required=True)
+        input = graphene.List(graphene.NonNull(CustomerInput), required=True)
 
     customers = graphene.List(CustomerType)
     errors = graphene.List(graphene.String)
