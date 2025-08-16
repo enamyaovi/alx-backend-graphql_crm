@@ -61,7 +61,6 @@ class CreateCustomer(graphene.Mutation):
     customer = graphene.Field(CustomerType) 
     message = graphene.String() 
     
-    @staticmethod 
     def mutate(root, info, input): 
         if Customer.objects.filter(email=input.email).exists(): 
             customer = Customer(name=input.name, email=input.email, phone=input.phone)
