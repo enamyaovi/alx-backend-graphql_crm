@@ -130,26 +130,13 @@ class CreateOrder(graphene.Mutation):
         order.products.set(products)
         return CreateOrder(order=order)
 
-# Query
-class Query(graphene.ObjectType):
-    customers = graphene.List(CustomerType)
-    products = graphene.List(ProductType)
-    orders = graphene.List(OrderType)
+import graphene
+from crm.schema import Query as CRMQuery, Mutation as CRMMutation
 
-    def resolve_customers(self, info):
-        return Customer.objects.all()
+class Query(CRMQuery, graphene.ObjectType):
+    pass
 
-    def resolve_products(self, info):
-        return Product.objects.all()
-
-    def resolve_orders(self, info):
-        return Order.objects.all()
-
-# Mutation
-class Mutation(graphene.ObjectType):
-    create_customer = CreateCustomer.Field()
-    bulk_create_customers = BulkCreateCustomers.Field()
-    create_product = CreateProduct.Field()
-    create_order = CreateOrder.Field()
+class Mutation(CRMMutation, graphene.ObjectType):
+    pass
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
