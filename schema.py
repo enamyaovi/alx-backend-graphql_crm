@@ -1,13 +1,12 @@
 import graphene
-from crm.schema import Query as CRMQuery, Mutation as CRMMutation
 
-class Query(CRMQuery, graphene.ObjectType):
+class Query(graphene.ObjectType):
     hello = graphene.String(default_value="Hello, GraphQL!")
 
     def resolve_hello(parent, info): # type: ignore
         return 'Hello, GraphQL!'
     
-class Mutation(CRMMutation, graphene.ObjectType):
+class Mutation(graphene.ObjectType):
     pass
 
 
