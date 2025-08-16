@@ -3,21 +3,21 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
+from graphql import GraphQLError
 from .models import Customer, Product, Order
 from .filters import CustomerFilter, ProductFilter, OrderFilter
+from django.db import transaction
 
 class CustomerType(DjangoObjectType):
 
     class Meta:
         model = Customer
         fields = "__all__"
-        interfaces = (graphene.relay.Node,)
 
 class ProductType(DjangoObjectType):
     class Meta:
         model = Product
         fields = "__all__"
-        interfaces = (graphene.relay.Node,)
 
 class OrderType(DjangoObjectType):
     orderDate = graphene.DateTime(source="order_date")
@@ -29,7 +29,6 @@ class OrderType(DjangoObjectType):
     class Meta:
         model = Order
         fields = "__all__"
-        interfaces = (graphene.relay.Node,)
 
 class CustomerInput(graphene.InputObjectType):
     name = graphene.String(required=True)
