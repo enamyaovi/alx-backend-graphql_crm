@@ -3,7 +3,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from crm.models import Customer, Product, Order
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 from decimal import Decimal
 from crm.filters import CustomerFilter, ProductFilter, OrderFilter
@@ -15,14 +15,25 @@ from graphql import GraphQLError
 class CustomerType(DjangoObjectType):
     class Meta:
         model = Customer
+        fields = "__all__"
 
 class ProductType(DjangoObjectType):
     class Meta:
         model = Product
+        fields = "__all__"
 
 class OrderType(DjangoObjectType):
+    orderDate = graphene.DateTime(source="order_date")
+    product = graphene.Field(ProductType) 
+    
+    def resolve_product(self, info):
+        return self.products.first()
+    
     class Meta:
         model = Order
+        fields = "__all__"
+
+    
 
 # ------------------------------
 # Input Types
