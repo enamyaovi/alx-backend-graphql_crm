@@ -182,7 +182,9 @@ class CreateOrder(graphene.Mutation):
 
 class Mutation(graphene.ObjectType):
     create_customer = CreateCustomer.Field()
+    bulk_create_customers = BulkCreateCustomers.Field()
     create_product = CreateProduct.Field()
+    create_order = CreateOrder.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
 
@@ -197,3 +199,7 @@ schema = graphene.Schema(query=Query, mutation=Mutation)
     
 
 # schema = graphene.Schema(query=Query)
+
+#total_amount
+#try:
+#except:
