@@ -1,10 +1,8 @@
 import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
-from django.db import transaction
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
-from graphql import GraphQLError
 from .models import Customer, Product, Order
 from .filters import CustomerFilter, ProductFilter, OrderFilter
 
