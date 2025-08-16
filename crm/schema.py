@@ -63,9 +63,10 @@ class CreateCustomer(graphene.Mutation):
     customer = graphene.Field(CustomerType)
     message = graphene.String()
 
-    def mutate(self, info, input):
+    @staticmethod
+    def mutate(root, info, input):
         if Customer.objects.filter(email=input.email).exists():
-            return CreateCustomer(customer=None, message="Email already exists")
+            raise GraphQLError("Email already exists")
         if input.phone and not re.match(r'^(\+\d{10,15}|\d{3}-\d{3}-\d{4})$', input.phone):
             return CreateCustomer(customer=None, message="Invalid phone number format")
         customer = Customer.objects.create(
