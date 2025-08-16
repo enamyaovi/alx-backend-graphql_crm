@@ -3,7 +3,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from crm.models import Customer, Product, Order
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 from decimal import Decimal
 from crm.filters import CustomerFilter, ProductFilter, OrderFilter
