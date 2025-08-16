@@ -64,7 +64,6 @@ class CreateCustomer(graphene.Mutation):
     @staticmethod 
     def mutate(root, info, input): 
         if Customer.objects.filter(email=input.email).exists(): 
-            raise GraphQLError("Email already exists") 
         try: 
             customer = Customer(name=input.name, email=input.email, phone=input.phone)
             customer.full_clean() 
