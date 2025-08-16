@@ -64,12 +64,10 @@ class CreateCustomer(graphene.Mutation):
     @staticmethod 
     def mutate(root, info, input): 
         if Customer.objects.filter(email=input.email).exists(): 
-        try: 
             customer = Customer(name=input.name, email=input.email, phone=input.phone)
             customer.full_clean() 
             customer.save() 
             return CreateCustomer(customer=customer, message="Customer created successfully")
-        except ValidationError as e: 
 
 class BulkCreateCustomers(graphene.Mutation):
     class Arguments:
