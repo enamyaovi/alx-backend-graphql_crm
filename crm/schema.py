@@ -64,7 +64,6 @@ class CreateCustomer(graphene.Mutation):
     def mutate(root, info, input): 
         if Customer.objects.filter(email=input.email).exists(): 
             customer = Customer(name=input.name, email=input.email, phone=input.phone)
-            customer.full_clean() 
             customer.save() 
             return CreateCustomer(customer=customer, message="Customer created successfully")
 
