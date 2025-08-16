@@ -9,7 +9,6 @@ from .models import Customer, Product, Order
 from .filters import CustomerFilter, ProductFilter, OrderFilter
 
 class CustomerType(DjangoObjectType):
-    createdAt = graphene.DateTime(source="created_at")
 
     class Meta:
         model = Customer
