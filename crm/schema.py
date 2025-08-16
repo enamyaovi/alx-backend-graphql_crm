@@ -1,11 +1,14 @@
 import re
 import graphene
 from graphene_django import DjangoObjectType
+from graphene_django.filter import DjangoFilterConnectionField
 from crm.models import Customer, Product, Order
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
+from crm.filters import CustomerFilter, ProductFilter, OrderFilter
 
+# Types
 class CustomerType(DjangoObjectType):
     class Meta:
         model = Customer
@@ -130,20 +133,11 @@ class CreateOrder(graphene.Mutation):
         order.products.set(products)
         return CreateOrder(order=order)
 
-# Query
+# Query with filters
 class Query(graphene.ObjectType):
-    customers = graphene.List(CustomerType)
-    products = graphene.List(ProductType)
-    orders = graphene.List(OrderType)
-
-    def resolve_customers(self, info):
-        return Customer.objects.all()
-
-    def resolve_products(self, info):
-        return Product.objects.all()
-
-    def resolve_orders(self, info):
-        return Order.objects.all()
+    all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter)
+    all_products = DjangoFilterConnectionField(ProductType, filterset_class=ProductFilter)
+    all_orders = DjangoFilterConnectionField(OrderType, filterset_class=OrderFilter)
 
 # Mutation
 class Mutation(graphene.ObjectType):
