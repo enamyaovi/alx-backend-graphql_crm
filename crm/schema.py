@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 from crm.filters import CustomerFilter, ProductFilter, OrderFilter
+from graphql import GraphQLError
 
 # ------------------------------
 # GraphQL Types
