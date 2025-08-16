@@ -1,23 +1,26 @@
 import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
+from django.db import transaction
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 from graphql import GraphQLError
 from .models import Customer, Product, Order
 from .filters import CustomerFilter, ProductFilter, OrderFilter
-from django.db import transaction
 
 class CustomerType(DjangoObjectType):
+    createdAt = graphene.DateTime(source="created_at")
 
     class Meta:
         model = Customer
         fields = "__all__"
+        interfaces = (graphene.relay.Node,)
 
 class ProductType(DjangoObjectType):
     class Meta:
         model = Product
         fields = "__all__"
+        interfaces = (graphene.relay.Node,)
 
 class OrderType(DjangoObjectType):
     orderDate = graphene.DateTime(source="order_date")
@@ -29,6 +32,7 @@ class OrderType(DjangoObjectType):
     class Meta:
         model = Order
         fields = "__all__"
+        interfaces = (graphene.relay.Node,)
 
 class CustomerInput(graphene.InputObjectType):
     name = graphene.String(required=True)
@@ -134,9 +138,6 @@ class CreateOrder(graphene.Mutation):
             raise GraphQLError(str(e)) from None
 
 class Query(graphene.ObjectType):
-    all_customers = graphene.relay.ConnectionField(CustomerType._meta.connection, filter=CustomerInput, order_by=graphene.List(of_type=graphene.String))
-    all_products = graphene.relay.ConnectionField(ProductType._meta.connection, filter=ProductInput, order_by=graphene.List(of_type=graphene.String))
-    all_orders = graphene.relay.ConnectionField(OrderType._meta.connection, filter=OrderInput, order_by=graphene.List(of_type=graphene.String))
 
     def resolve_all_customers(self, info, filter=None, order_by=None, **kwargs):
         qs = Customer.objects.all()
