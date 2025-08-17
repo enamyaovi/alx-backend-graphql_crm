@@ -131,7 +131,7 @@ class CreateOrder(graphene.Mutation):
 
         products = Product.objects.filter(pk__in=input.product_ids)
         if not products.exists() or products.count() != len(set(map(str, input.product_ids))):
-            raise GraphQLError("Some product IDs are invalid")
+            raise GraphQLError("Invalid product ID")
 
         try:
             order = Order(
