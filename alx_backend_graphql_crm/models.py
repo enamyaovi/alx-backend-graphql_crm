@@ -15,7 +15,8 @@ class Customer(models.Model):
         validators=[RegexValidator(
             regex=r'^(\+\d{1,15}|\d{3}-\d{3}-\d{4})$',
             message="Phone number must be in the format +1234567890 or 123-456-7890"
-        )])
+        )]
+    )
 
     def __str__(self):
         return self.name
@@ -26,7 +27,8 @@ class Product(models.Model):
     price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))])
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
     stock = models.PositiveIntegerField(default=0)
 
     def clean(self):
@@ -50,10 +52,20 @@ class Order(models.Model):
         related_name='product_orders'
     )
     order_date = models.DateTimeField(default=timezone.now)
+    total_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        # default=0
+    )
 
-    def total_amount(self):
-        return sum(product.price for product in self.products.all())
+    def update_total_amount(self):
+        self.total_amount = sum(product.price for product in self.products.all())
+        self.save(update_fields=['total_amount'])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_total_amount()
 
     def __str__(self):
         product_names = ", ".join(self.products.values_list('name', flat=True))
-        return f"Order {self.pk} by {self.customer.name} | Cart: [{product_names}] | Total: GH₵{self.total_amount()}"
+        return f"Order {self.pk} by {self.customer.name} | Cart: [{product_names}] | Total: GH₵{self.total_amount}"

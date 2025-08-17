@@ -55,7 +55,7 @@ class Order(models.Model):
     total_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=0
+        # default=0
     )
 
     def update_total_amount(self):
