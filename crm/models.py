@@ -51,7 +51,7 @@ class Order(models.Model):
         Product,
         related_name='product_orders'
     )
-    order_date = models.DateTimeField(default=timezone.now)
+    order_date = models.DateTimeField(auto_now_add=True)
     total_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
