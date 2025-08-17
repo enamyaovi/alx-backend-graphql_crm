@@ -4,7 +4,7 @@ import random
 from faker import Faker
 
 # Setup Django environment
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "your_project.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "alx_backend_graphql.settings")
 django.setup()
 
 from crm.models import Customer, Product, Order
@@ -58,7 +58,7 @@ def create_orders(customers, products):
         orders.append(order)
     return orders
 
-def run():
+def seed():
     print("Seeding database...")
     customers = create_customers()
     print(f"Created {len(customers)} customers")
@@ -72,4 +72,4 @@ def run():
     print("Database seeding complete!")
 
 if __name__ == "__main__":
-    run()
+    seed()
