@@ -131,6 +131,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 GRAPHENE = {
-    "SCHEMA": "alx_backend_graphql_crm.schema.schema",
+    "SCHEMA": "graphql_crm.schema.schema",
     "ATOMIC_MUTATIONS": True,
 }
