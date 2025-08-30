@@ -3,6 +3,7 @@ import os
 import requests
 from celery import shared_task
 from django.conf import settings
+from datetime import datetime
 
 # Ensure logger writes to /tmp/crm_report_log.txt
 logger = logging.getLogger("crm")
