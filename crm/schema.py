@@ -148,6 +148,28 @@ class CreateOrder(graphene.Mutation):
         except Exception as e:
             raise GraphQLError(str(e)) from None
 
+class UpdateLowStockProducts(graphene.Mutation):
+    class Arguments:
+        pass 
+
+    success = graphene.String()
+    updated_products = graphene.List(ProductType)
+
+    @classmethod
+    def mutate(cls, root, info):
+        updated = []
+        low_stock_products = Product.objects.filter(stock__lt=10)
+
+        for product in low_stock_products:
+            product.stock += 10
+            product.save()
+            updated.append(product)
+
+        return UpdateLowStockProducts(
+            success=f"Restocked {len(updated)} products",
+            updated_products=updated,
+        )
+
 class Query(graphene.ObjectType):
     all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter)
     all_products = DjangoFilterConnectionField(ProductType, filterset_class=ProductFilter)
@@ -170,5 +192,6 @@ class Mutation(graphene.ObjectType):
     bulk_create_customers = BulkCreateCustomers.Field()
     create_product = CreateProduct.Field()
     create_order = CreateOrder.Field()
+    update_low_stock_products = UpdateLowStockProducts.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
