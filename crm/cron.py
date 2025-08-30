@@ -1,67 +1,78 @@
 import logging
 import os
-import requests
 from datetime import datetime
 from django.conf import settings
+from gql import gql, Client
+from gql.transport.requests import RequestsHTTPTransport
 
-logger = logging.getLogger("crm")
+# Configure separate loggers for cron jobs
+heartbeat_logger = logging.getLogger("crm.heartbeat")
+low_stock_logger = logging.getLogger("crm.low_stock")
+
+heartbeat_handler = logging.FileHandler("/tmp/crm_heartbeat_log.txt")
+heartbeat_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+heartbeat_logger.addHandler(heartbeat_handler)
+heartbeat_logger.setLevel(logging.INFO)
+
+low_stock_handler = logging.FileHandler("/tmp/low_stock_updates_log.txt")
+low_stock_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+low_stock_logger.addHandler(low_stock_handler)
+low_stock_logger.setLevel(logging.INFO)
+
+
+def get_client():
+    graphql_endpoint = os.getenv(
+        "GRAPHQL_ENDPOINT",
+        getattr(settings, "GRAPHQL_ENDPOINT", "http://localhost:8000/graphql"),
+    )
+    transport = RequestsHTTPTransport(url=graphql_endpoint, verify=True, retries=3)
+    return Client(transport=transport, fetch_schema_from_transport=True)
+
 
 def log_crm_heartbeat():
     """
-    Cron job to log CRM heartbeat and optionally check GraphQL hello.
+    Cron job to log CRM heartbeat and check GraphQL hello.
     """
-    timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
-    logger.info(f"{timestamp} CRM is alive")
-
-    graphql_endpoint = os.getenv(
-        "GRAPHQL_ENDPOINT",
-        getattr(settings, "GRAPHQL_ENDPOINT", "http://localhost:8000/graphql")
-    )
+    client = get_client()
+    query = gql("""query { hello }""")
 
     try:
-        query = """query { hello }"""
-        response = requests.post(graphql_endpoint, json={"query": query})
-        response.raise_for_status()
-        data = response.json()
-        logger.info(f"GraphQL hello response: {data.get('data', {}).get('hello')}")
+        result = client.execute(query)
+        hello_value = result.get("hello", "No response")
+        heartbeat_logger.info(f"CRM is alive - GraphQL hello response: {hello_value}")
     except Exception as e:
-        logger.error(f"Error querying GraphQL hello: {e}", exc_info=True)
+        heartbeat_logger.error(f"Error querying GraphQL hello: {e}", exc_info=True)
 
 
 def update_low_stock():
     """
     Cron job to update low-stock products via GraphQL mutation.
     """
-    graphql_endpoint = os.getenv(
-        "GRAPHQL_ENDPOINT",
-        getattr(settings, "GRAPHQL_ENDPOINT", "http://localhost:8000/graphql")
-    )
-
-    mutation = """
-    mutation {
-        updateLowStockProducts {
-            success
-            updatedProducts {
-                name
-                stock
+    client = get_client()
+    mutation = gql(
+        """
+        mutation {
+            updateLowStockProducts {
+                success
+                updatedProducts {
+                    name
+                    stock
+                }
             }
         }
-    }
-    """
+        """
+    )
 
     try:
-        response = requests.post(graphql_endpoint, json={"query": mutation})
-        response.raise_for_status()
-        data = response.json()
-
-        products = data.get("data", {}).get("updateLowStockProducts", {}).get("updatedProducts", [])
+        result = client.execute(mutation)
+        products = result.get("updateLowStockProducts", {}).get("updatedProducts", [])
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if products:
             for p in products:
-                logger.info(f"{timestamp} - Restocked {p['name']} to {p['stock']}")
+                low_stock_logger.info(f"{timestamp} - Restocked {p['name']} to {p['stock']}")
         else:
-            logger.info(f"{timestamp} - No low-stock products updated")
+            low_stock_logger.info(f"{timestamp} - No low-stock products updated")
 
     except Exception as e:
-        logger.error(f"Error updating low-stock products: {e}", exc_info=True)
+        low_stock_logger.error(f"Error updating low-stock products: {e}", exc_info=True)

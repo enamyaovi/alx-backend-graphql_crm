@@ -3,9 +3,18 @@ import os
 import requests
 from celery import shared_task
 from django.conf import settings
-from datetime import datetime
 
+# Ensure logger writes to /tmp/crm_report_log.txt
 logger = logging.getLogger("crm")
+logger.setLevel(logging.INFO)
+
+log_file = "/tmp/crm_report_log.txt"
+if not logger.handlers:  
+    file_handler = logging.FileHandler(log_file)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
 
 @shared_task
 def generate_crm_report():
@@ -35,8 +44,12 @@ def generate_crm_report():
         orders = stats.get("totalOrders", 0)
         revenue = stats.get("totalRevenue", 0.0)
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logger.info(f"{timestamp} - Report: {customers} customers, {orders} orders, {revenue} revenue")
+        logger.info(
+            "Report: %s customers, %s orders, %s revenue",
+            customers,
+            orders,
+            revenue,
+        )
 
     except Exception as e:
-        logger.error(f"Error generating CRM report: {e}", exc_info=True)
+        logger.error("Error generating CRM report: %s", e, exc_info=True)
